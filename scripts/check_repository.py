@@ -22,6 +22,7 @@ LOCAL_ONLY = (
 )
 DELIVERY_FILES = {
     "delivery/calibration_results.csv",
+    "delivery/deeplearning_results.csv",
     "delivery/pose_results.csv",
     "delivery/technical_manual.html",
     "delivery/technical_manual.pdf",

@@ -1,0 +1,11 @@
+method,split,metric,value,unit,sample_count,interpretation
+corner_network,synthetic_validation,best_validation_loss,0.34427590608596803,BCE,200,"Optimization objective at epoch 27; not a pixel error"
+corner_network+log3,synthetic_validation,precision_at_1px,0.9969016266460109,ratio,6455,"6435 matched predictions; rendered labels are synthetic truth"
+corner_network+log3,synthetic_validation,recall_at_1px,0.9976744186046511,ratio,6450,"6435 of 6450 rendered corners matched"
+corner_network+log3,synthetic_validation,matched_mean_error,0.036803998270024584,px,6435,"Mean localization error over matched corners only"
+corner_network+log3,real_B_development,complete_grid_rate,1.0,ratio,10,"108 ordered corners recovered in all 10 images"
+corner_network+log3,real_B_development,mean_disagreement_vs_SB,0.27499920129776,px,1080,"SB is a correspondence reference, not physical ground truth"
+corner_network+log3,real_C_previously_inspected,mean_joint_reprojection_RMS,0.1338503240226368,px,5,"Internal consistency after stereo pose refinement; not blind evaluation"
+OpenCV_SB,real_C_previously_inspected,mean_joint_reprojection_RMS,0.17688798945021367,px,5,"Traditional detector comparison under the same frozen camera model"
+corner_network+log3,real_C_previously_inspected,mean_right_prediction_RMS,0.14673384241628912,px,5,"Right image predicted from the left-only initial pose"
+OpenCV_SB,real_C_previously_inspected,mean_right_prediction_RMS,0.19053574159883555,px,5,"Traditional detector comparison under the same frozen camera model"

@@ -73,6 +73,8 @@ python3 run_pipeline.py all --config config.yaml
 
 深度学习扩展实验：
 
+固定的实验参数与环境记录见 [`config_deeplearning.yaml`](config_deeplearning.yaml)。
+
 ```bash
 python3 -m src.deeplearning.prepare \
   --root . \
@@ -104,6 +106,7 @@ python3 -m src.deeplearning.train \
 |---|---|
 | `delivery/calibration_results.csv` | 双目相机标定参数 |
 | `delivery/pose_results.csv` | 5 对测试图像的棋盘位姿 |
+| [`delivery/deeplearning_results.csv`](delivery/deeplearning_results.csv) | 深度学习扩展实验的可核查指标 |
 | `delivery/technical_manual.pdf` | 技术说明与实验报告 |
 
 ## 测试
