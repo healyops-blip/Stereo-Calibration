@@ -1,0 +1,13 @@
+board:
+  columns: 12
+  rows: 9
+  square_mm: 19.0
+calibration_dir: dataset/calibration_images
+pose_dir: dataset/pose_test_images
+output_dir: outputs
+excluded_ids: ['000015', '000016', '000027']
+expected_test_ids: ['000001', '000002', '000003', '000004', '000005']
+seed: 20260905
+folds: 5
+bootstrap_samples: 20
+near_duplicate_rms_px: 5.0

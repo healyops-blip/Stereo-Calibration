@@ -1,0 +1,68 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "阶段三：完整交付验收",
+      "type": "debugpy", "request": "launch",
+      "python": "${workspaceFolder}/.venv/bin/python",
+      "program": "${workspaceFolder}/check_quality.py",
+      "args": ["--with-results"], "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal", "justMyCode": true
+    },
+    {
+      "name": "阶段二：姿态精度专项验证与可视化",
+      "type": "debugpy", "request": "launch",
+      "python": "${workspaceFolder}/.venv/bin/python",
+      "program": "${workspaceFolder}/validate_pose_accuracy.py",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal", "justMyCode": true
+    },
+    {
+      "name": "阶段一：CSV 原图重投影可视化",
+      "type": "debugpy", "request": "launch",
+      "python": "${workspaceFolder}/.venv/bin/python",
+      "program": "${workspaceFolder}/visualize_calibration.py",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal", "justMyCode": true
+    },
+    {
+      "name": "阶段一：标定与交叉验证",
+      "type": "debugpy", "request": "launch",
+      "python": "${workspaceFolder}/.venv/bin/python",
+      "program": "${workspaceFolder}/run_pipeline.py",
+      "args": ["calibrate"], "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal", "justMyCode": true
+    },
+    {
+      "name": "阶段二：五对测试姿态估计",
+      "type": "debugpy", "request": "launch",
+      "python": "${workspaceFolder}/.venv/bin/python",
+      "program": "${workspaceFolder}/run_pipeline.py",
+      "args": ["pose"], "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal", "justMyCode": true
+    },
+    {
+      "name": "阶段三：CSV 回读与结果验证",
+      "type": "debugpy", "request": "launch",
+      "python": "${workspaceFolder}/.venv/bin/python",
+      "program": "${workspaceFolder}/run_pipeline.py",
+      "args": ["validate"], "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal", "justMyCode": true
+    },
+    {
+      "name": "阶段三：单元测试 pytest",
+      "type": "debugpy", "request": "launch",
+      "python": "${workspaceFolder}/.venv/bin/python", "module": "pytest",
+      "args": ["-v"], "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal", "justMyCode": false
+    },
+    {
+      "name": "完整流程：三个阶段",
+      "type": "debugpy", "request": "launch",
+      "python": "${workspaceFolder}/.venv/bin/python",
+      "program": "${workspaceFolder}/run_pipeline.py",
+      "args": ["all"], "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal", "justMyCode": true
+    }
+  ]
+}

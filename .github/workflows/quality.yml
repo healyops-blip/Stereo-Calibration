@@ -1,0 +1,25 @@
+name: Repository quality
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  quality:
+    name: Code and data policy
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Reject tracked datasets and generated outputs
+        run: python scripts/check_repository.py --history
+      - name: Install locked development dependencies
+        run: python -m pip install -r requirements-lock.txt
+      - name: Lint, types, security, synthetic tests and dependency checks
+        run: python check_quality.py

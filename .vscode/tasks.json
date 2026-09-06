@@ -1,0 +1,13 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {"label": "阶段三：完整质量检查", "type": "process",
+     "command": "${workspaceFolder}/.venv/bin/python",
+     "args": ["${workspaceFolder}/check_quality.py"],
+     "options": {"cwd": "${workspaceFolder}"}, "problemMatcher": []},
+    {"label": "阶段三：交付验收（包含已有结果）", "type": "process",
+     "command": "${workspaceFolder}/.venv/bin/python",
+     "args": ["${workspaceFolder}/check_quality.py", "--with-results"],
+     "options": {"cwd": "${workspaceFolder}"}, "problemMatcher": []}
+  ]
+}

@@ -1,0 +1,19 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.DS_Store
+outputs/
+# Raw datasets must remain local, including the former directory name.
+/dataset/
+/kaoti/
+*.bmp
+*.zip
+*.7z
+*.tar
+*.tar.gz
+*.tgz
+.env
+.env.*
+!.env.example
