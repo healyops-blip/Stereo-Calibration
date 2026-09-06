@@ -1,0 +1,50 @@
+# Reproducibility manifest for the reported deep-learning extension.
+experiment:
+  name: corner_detector_4090_v1
+  seed: 20260905
+  purpose: synthetic_training_with_real_image_comparison
+
+data:
+  board_inner_corners: [12, 9]
+  square_size_mm: 19.0
+  synthetic_scenes:
+    train: 2000
+    validation: 200
+    test: 200
+  real_development_pairs: 5
+  pose_evaluation_pairs: 5
+  excluded_pair_ids: ["000015", "000016", "000027"]
+
+training:
+  crop_size_px: 256
+  batch_size: 8
+  workers: 4
+  epochs: 30
+  optimizer: AdamW
+  initial_learning_rate: 0.001
+  weight_decay: 0.0001
+  checkpoint_selection: minimum_validation_loss
+
+inference:
+  probability_threshold: 0.5
+  matching_radius_px: 1.0
+  non_maximum_suppression_window_px: 7
+  selected_subpixel_method: log3
+  expected_corner_count: 108
+
+recorded_environment:
+  gpu: NVIDIA GeForce RTX 4090
+  pytorch: 2.4.0
+  cuda: "12.1"
+  opencv: 4.11.0
+
+artifacts:
+  best_epoch: 27
+  best_validation_loss: 0.34427590608596803
+  weights_sha256: 6523593db8833ef3fd0bdf32244ac21469e1f1972b41f0fd27141ea4b3c2088c
+  results: delivery/deeplearning_results.csv
+
+limitations:
+  - Validation loss is a BCE training objective, not a pixel localization error.
+  - Real set B is development validation and set C was previously inspected, so neither is blind.
+  - Real-image metrics use OpenCV SB correspondence as a reference, not physical ground truth.
