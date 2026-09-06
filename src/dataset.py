@@ -2,11 +2,12 @@
 
 import re
 from pathlib import Path
-from typing import cast
 
 import cv2
 import numpy as np
 from numpy.typing import NDArray
+
+from src.contracts import require_gray
 
 
 def pair_paths(folder: Path) -> dict[str, dict[str, Path]]:
@@ -48,7 +49,10 @@ def read_gray(path: Path) -> NDArray[np.uint8]:
         OSError: 文件无法读取。
         cv2.error: 解码器拒绝输入缓冲区。
     """
-    image = cv2.imdecode(np.fromfile(path, dtype=np.uint8), cv2.IMREAD_GRAYSCALE)
+    encoded = np.fromfile(path, dtype=np.uint8)
+    if not encoded.size:
+        raise ValueError(f"Cannot decode empty image: {path}")
+    image = cv2.imdecode(encoded, cv2.IMREAD_GRAYSCALE)
     if image is None:
         raise ValueError(f"Cannot decode {path}")
-    return cast(NDArray[np.uint8], image)
+    return require_gray(image, context=str(path))

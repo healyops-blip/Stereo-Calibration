@@ -19,6 +19,9 @@ from torch.utils.data import DataLoader, TensorDataset
 from src.deeplearning.synthetic import heatmap, render_crop
 from src.export import write_json
 
+LOSS_BORDER_PX = 10
+POSITIVE_LABEL_THRESHOLD = 0.01
+
 
 def corner_network() -> nn.Sequential:
     """构造保持空间分辨率的轻量全卷积角点网络。
@@ -36,22 +39,40 @@ def corner_network() -> nn.Sequential:
     return nn.Sequential(*layers)
 
 
-def balanced_loss(logits: Any, target: Any) -> Any:
+def balanced_loss(logits: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
     """分别归一化正负像素的 BCE，忽略十像素边缘。
 
     Args:
-        logits: 网络原始输出 (B, 1, H, W)，空间大小须大于 20。
-        target: 同形高斯标签；大于 0.01 的位置归为正区域。
+        logits: 浮点 Tensor (B,1,H,W)，空间大小须大于 20。
+        target: 同形、同设备浮点高斯标签 [0,1]；大于 0.01 的位置归为正区域。
 
     Returns:
         可反向传播的标量损失。
 
     Note:
         对空正区/负区用计数下限保护；不等价于角点定位误差。
+
+    Raises:
+        ValueError: 形状、通道、设备或浮点类型不匹配。
     """
-    logits, target = logits[..., 10:-10, 10:-10], target[..., 10:-10, 10:-10]
+    if (
+        logits.ndim != 4
+        or logits.shape != target.shape
+        or logits.shape[1] != 1
+        or logits.shape[0] == 0
+        or min(logits.shape[-2:]) <= 2 * LOSS_BORDER_PX
+        or not logits.is_floating_point()
+        or not target.is_floating_point()
+        or logits.device != target.device
+    ):
+        raise ValueError(
+            "Expected matching floating (B,1,H,W) tensors with H,W > 20; "
+            f"got {logits.shape}, {target.shape}"
+        )
+    logits = logits[..., LOSS_BORDER_PX:-LOSS_BORDER_PX, LOSS_BORDER_PX:-LOSS_BORDER_PX]
+    target = target[..., LOSS_BORDER_PX:-LOSS_BORDER_PX, LOSS_BORDER_PX:-LOSS_BORDER_PX]
     loss = nn.functional.binary_cross_entropy_with_logits(logits, target, reduction="none")
-    positive = target > 0.01
+    positive = target > POSITIVE_LABEL_THRESHOLD
     negative = ~positive
     return (loss * positive).sum() / positive.sum().clamp_min(1) + (
         loss * negative

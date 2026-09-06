@@ -1,6 +1,13 @@
 [tool.ruff]
 target-version = "py311"
 line-length = 100
+force-exclude = true
+extend-exclude = [
+    "dataset", "outputs", "output", "tmp", "docs", "Stereo Calibration Reference",
+    "run_experiments.py", "src/calibration_experiments.py", "src/experiment_*.py",
+    "scripts/build_manual.py", "scripts/plot_C_comparison.py",
+    "tests/test_experiment_design.py", "tests/test_manual.py",
+]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B"]
@@ -10,6 +17,11 @@ python_version = "3.11"
 ignore_missing_imports = true
 check_untyped_defs = true
 disallow_untyped_defs = true
+exclude = [
+    '^src/(calibration_experiments|experiment_[^/]+)\.py$',
+    '^scripts/(build_manual|plot_C_comparison)\.py$',
+    '^tests/test_(experiment_design|manual)\.py$',
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

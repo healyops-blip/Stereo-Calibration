@@ -74,16 +74,23 @@ def check_model(model: dict[str, Any]) -> None:
 
     Args:
         model: 含 K_left、D_left、K_right、D_right、R_RL、t_RL 的模型。
-            调用方提供符合约定形状的数值数组。
+            K/R 为 (3,3)，D 为 (5,)、(1,5) 或 (5,1)，t 为 (3,) 或 (3,1)。
 
     Raises:
-        ValueError: 参数非有限、焦距非正、旋转不合法或基线退化。
+        ValueError: 参数形状错误、非有限、焦距非正、旋转不合法或基线退化。
         KeyError: 缺少必需字段。
 
-    Note:
-        不提供完整的输入形状校验。
     """
     for key in ("K_left", "D_left", "K_right", "D_right", "R_RL", "t_RL"):
+        expected: set[tuple[int, ...]] = {(3, 3)}
+        if key.startswith("D_"):
+            expected = {(5,), (1, 5), (5, 1)}
+        elif key == "t_RL":
+            expected = {(3,), (3, 1)}
+        if np.shape(model[key]) not in expected:
+            raise ValueError(
+                f"{key}: invalid shape {np.shape(model[key])}; expected {sorted(expected)}"
+            )
         if not np.isfinite(model[key]).all():
             raise ValueError(f"Nonfinite camera parameter: {key}")
     for side in ("left", "right"):

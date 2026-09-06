@@ -26,6 +26,19 @@ def test_network_shape_and_finite_background_gradients() -> None:
     assert all(torch.isfinite(p.grad).all() for p in model.parameters())
 
 
+@pytest.mark.parametrize("shape", [(0, 1, 32, 32), (1, 2, 32, 32), (1, 1, 20, 32), (32, 32)])
+def test_loss_rejects_invalid_dimensions(shape: tuple[int, ...]) -> None:
+    with pytest.raises(ValueError, match="floating"):
+        balanced_loss(torch.zeros(shape), torch.zeros(shape))
+
+
+def test_loss_rejects_mismatched_shape_and_integer_labels() -> None:
+    logits = torch.zeros(1, 1, 32, 32)
+    for target in (torch.zeros(1, 1, 33, 32), torch.zeros_like(logits, dtype=torch.int64)):
+        with pytest.raises(ValueError, match="floating"):
+            balanced_loss(logits, target)
+
+
 @pytest.mark.cuda
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA inference test")
 def test_tile_halo_matches_full_frame_inference() -> None:

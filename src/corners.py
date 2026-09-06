@@ -2,15 +2,21 @@
 
 import hashlib
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import cv2
 import numpy as np
+from numpy.typing import NDArray
 
+from src.contracts import CornerQuality, require_gray, require_pattern
 from src.dataset import pair_paths, read_gray
 
+SUBPIX_HALF_WINDOW_PX = 5
+SUBPIX_MAX_ITERATIONS = 100
+SUBPIX_EPSILON_PX = 1e-4
 
-def object_points(board: dict[str, Any]) -> Any:
+
+def object_points(board: dict[str, Any]) -> NDArray[np.float32]:
     """生成按行排列的理想平面棋盘物点，Z=0。
 
     Args:
@@ -18,13 +24,22 @@ def object_points(board: dict[str, Any]) -> Any:
 
     Returns:
         (rows * columns, 3) 的 float32 理想物点，单位 mm。
+
+    Raises:
+        ValueError: 行列数非正整数或 square_mm 非有限正数。
     """
+    require_pattern((board["columns"], board["rows"]))
+    spacing = float(board["square_mm"])
+    if not np.isfinite(spacing) or spacing <= 0:
+        raise ValueError(f"Expected positive finite square_mm, got {spacing}")
     points = np.zeros((board["rows"] * board["columns"], 3), np.float32)
     points[:, :2] = np.mgrid[: board["columns"], : board["rows"]].T.reshape(-1, 2)
     return points * board["square_mm"]
 
 
-def detect(image: Any, shape: tuple[int, int], detector: str = "auto") -> tuple[Any, str]:
+def detect(
+    image: NDArray[np.uint8], shape: tuple[int, int], detector: str = "auto"
+) -> tuple[NDArray[np.float32], str]:
     """检测并排列完整棋盘的亚像素角点。
 
     Args:
@@ -33,12 +48,14 @@ def detect(image: Any, shape: tuple[int, int], detector: str = "auto") -> tuple[
         detector: auto 优先 SB、失败后回退 classic；显式指定方法不回退。
 
     Returns:
-        (N, 1, 2) float32 角点（px）与实际检测器名称。
+        np.ndarray (N, 1, 2)，float32，按 (x,y) 存储的角点 px，与实际检测器名称。
 
     Raises:
-        ValueError: 检测器未知或未检测到完整棋盘。
+        ValueError: 图像非 uint8 灰度、规格小于 3×3、检测器未知或棋盘不完整。
         cv2.error: 图像或棋盘规格不满足 OpenCV 接口要求。
     """
+    require_gray(image, context="detect")
+    require_pattern(shape, minimum=3)
     if detector not in ("auto", "sb", "classic"):
         raise ValueError(f"Unknown detector: {detector}")
     ok, corners, method = False, None, "SB"
@@ -56,16 +73,22 @@ def detect(image: Any, shape: tuple[int, int], detector: str = "auto") -> tuple[
             corners = cv2.cornerSubPix(
                 image,
                 corners,
-                (5, 5),
+                (SUBPIX_HALF_WINDOW_PX, SUBPIX_HALF_WINDOW_PX),
                 (-1, -1),
-                (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_MAX_ITER, 100, 1e-4),
+                (
+                    cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_MAX_ITER,
+                    SUBPIX_MAX_ITERATIONS,
+                    SUBPIX_EPSILON_PX,
+                ),
             )
-    if not ok:
+    if not ok or corners is None:
         raise ValueError("corners_not_found")
-    return order_corners(corners, shape), method
+    return order_corners(cast(NDArray[np.float32], corners), shape), method
 
 
-def order_corners(corners: Any, shape: tuple[int, int]) -> Any:
+def order_corners(
+    corners: NDArray[np.float32] | NDArray[np.float64], shape: tuple[int, int]
+) -> NDArray[np.float32]:
     """统一图像角点编号；对称棋盘的编号不代表跨帧固定的物理原点。
 
     Args:
@@ -74,7 +97,15 @@ def order_corners(corners: Any, shape: tuple[int, int]) -> Any:
 
     Returns:
         C 连续的 float32 数组 (N, 1, 2)，按图像上方行及向右列编号。
+
+    Raises:
+        ValueError: 角点数量不匹配、坐标非有限或棋盘行列数不合法。
     """
+    require_pattern(shape)
+    if corners.size != shape[0] * shape[1] * 2 or not np.isfinite(corners).all():
+        raise ValueError(
+            f"Invalid corners: shape={corners.shape}, expected {shape[0] * shape[1]} xy pairs"
+        )
     grid = corners.reshape(shape[1], shape[0], 2)
     if grid[0, :, 1].mean() > grid[-1, :, 1].mean():
         grid = grid[::-1]
@@ -83,12 +114,12 @@ def order_corners(corners: Any, shape: tuple[int, int]) -> Any:
     return np.ascontiguousarray(grid.reshape(-1, 1, 2), dtype=np.float32)
 
 
-def corner_quality(image: Any, corners: Any) -> dict[str, float]:
+def corner_quality(image: NDArray[np.uint8], corners: NDArray[np.float32]) -> CornerQuality:
     """计算棋盘覆盖率、中心位置和局部清晰度。
 
     Args:
-        image: 灰度图 (H, W)。
-        corners: 有效的棋盘角点 (N, 1, 2)，px。
+        image: np.ndarray uint8 灰度图 (H,W)，须已通过读取/检测校验。
+        corners: np.ndarray float32 有效角点 (N,1,2)，每点 (x,y)，px。
 
     Returns:
         包围框面积比、角点平均中心 px、包围框内 Laplacian 方差。

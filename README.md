@@ -106,14 +106,14 @@ dataset/
 ## 运行
 
 ```bash
-python run_pipeline.py calibrate  # 双目标定
-python run_pipeline.py pose       # 位姿估计
-python run_pipeline.py validate   # 结果检查
-python run_pipeline.py all        # 完整流程
-python visualize_calibration.py --output-dir outputs
-python validate_pose_accuracy.py --output-dir outputs
-python check_quality.py          # 无原始数据也可运行的基础检查
-python check_quality.py --with-results  # 另需完整 outputs/ 正式产物
+python3 run_pipeline.py calibrate  # 双目标定
+python3 run_pipeline.py pose       # 位姿估计
+python3 run_pipeline.py validate   # 结果检查
+python3 run_pipeline.py all        # 完整流程
+python3 visualize_calibration.py --output-dir outputs
+python3 validate_pose_accuracy.py --output-dir outputs
+python3 check_quality.py          # 无原始数据也可运行的基础检查
+python3 check_quality.py --with-results  # 另需完整 outputs/ 正式产物
 ```
 
 ## 代码结构
@@ -145,6 +145,8 @@ python check_quality.py --with-results  # 另需完整 outputs/ 正式产物
 - 未使用外部真值设备时，输出指标仅表示模型内部一致性。
 
 ## 提交前检查
+
+代码命名、数组/坐标约定、注释、输入校验和测试要求见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 ```bash
 git config core.hooksPath .githooks
