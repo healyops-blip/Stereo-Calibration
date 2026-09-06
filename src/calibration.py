@@ -9,6 +9,26 @@ import numpy as np
 def calibrate(
     observations: list[dict[str, Any]], points: Any, joint: bool = False
 ) -> dict[str, Any]:
+    """先标定左右相机，再求解五参数针孔双目模型。
+
+    Args:
+        observations: 至少六对完整观测。每项含 ``pair_id``、``size``
+            （宽、高，px）及 ``left``、``right`` 角点数组 (N, 1, 2)。
+            调用方保证图像尺寸和角点编号一致。
+        points: 棋盘坐标 (N, 3)，单位 mm；与图像角点一一对应。
+        joint: False 为 C0（固定单目内参）；True 为 C2（联合优化内参）。
+
+    Returns:
+        包含左右 K、D、左到右的 R_RL (3, 3) 与 t_RL (3, 1)、F、
+        图像尺寸、保留编号和 RMS 的字典。基线与平移单位 mm，RMS 单位 px。
+
+    Raises:
+        ValueError: 观测不足六对，或求得的模型未通过有效性检查。
+        cv2.error: OpenCV 拒绝输入或求解失败。
+
+    Note:
+        输入不做近重复分组；训练 RMS 不是外部绝对精度。
+    """
     if len(observations) < 6:
         raise ValueError("At least six complete stereo observations are required")
     objects = [points] * len(observations)
@@ -50,7 +70,27 @@ def calibrate(
 
 
 def check_model(model: dict[str, Any]) -> None:
+    """检查相机参数的有限性、焦距、旋转矩阵和非零基线。
+
+    Args:
+        model: 含 K_left、D_left、K_right、D_right、R_RL、t_RL 的模型。
+            K/R 为 (3,3)，D 为 (5,)、(1,5) 或 (5,1)，t 为 (3,) 或 (3,1)。
+
+    Raises:
+        ValueError: 参数形状错误、非有限、焦距非正、旋转不合法或基线退化。
+        KeyError: 缺少必需字段。
+
+    """
     for key in ("K_left", "D_left", "K_right", "D_right", "R_RL", "t_RL"):
+        expected: set[tuple[int, ...]] = {(3, 3)}
+        if key.startswith("D_"):
+            expected = {(5,), (1, 5), (5, 1)}
+        elif key == "t_RL":
+            expected = {(3,), (3, 1)}
+        if np.shape(model[key]) not in expected:
+            raise ValueError(
+                f"{key}: invalid shape {np.shape(model[key])}; expected {sorted(expected)}"
+            )
         if not np.isfinite(model[key]).all():
             raise ValueError(f"Nonfinite camera parameter: {key}")
     for side in ("left", "right"):

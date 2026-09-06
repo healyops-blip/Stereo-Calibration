@@ -6,31 +6,38 @@ import sys
 import time
 from pathlib import Path
 
+from scripts.check_repository import forbidden
 from src.export import write_json
 
 
 def main() -> None:
+    """执行本地静态检查、测试与依赖检查，并保存逐项退出码和日志。
+
+    --with-results 额外调用正式 CSV 回读验证。写入
+    outputs/quality/quality_checks.json；任一检查失败以状态 1 退出。
+    """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--with-results", action="store_true", help="Also verify existing CSV outputs"
     )
     args = parser.parse_args()
     root = Path(__file__).resolve().parent
-    targets = [
-        "src",
-        "scripts",
-        "tests",
-        "run_pipeline.py",
-        "visualize_calibration.py",
-        "validate_pose_accuracy.py",
-        "check_quality.py",
-    ]
+    paths = set(root.glob("*.py"))
+    for folder in ("src", "scripts", "tests"):
+        paths.update((root / folder).rglob("*.py"))
+    targets = sorted(
+        path.relative_to(root).as_posix()
+        for path in paths
+        if not forbidden(path.relative_to(root).as_posix())
+    )
+    source_targets = [path for path in targets if not path.startswith("tests/")]
+    test_targets = [path for path in targets if path.startswith("tests/test_")]
     commands = [
         ["-m", "ruff", "check", *targets],
         ["-m", "ruff", "format", "--check", *targets],
         ["-m", "mypy", *targets],
-        ["-m", "bandit", "-r", "src", "scripts", *targets[3:], "-ll"],
-        ["-m", "pytest", "-q"],
+        ["-m", "bandit", *source_targets, "-ll"],
+        ["-m", "pytest", "-q", *test_targets],
         ["-m", "pip", "check"],
     ]
     if args.with_results:

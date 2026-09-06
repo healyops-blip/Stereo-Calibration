@@ -18,6 +18,12 @@ from src.visualization import annotate
 
 
 def main() -> None:
+    """从交付相机 CSV 回读参数，生成标定原图叠加与放大 HTML。
+
+    CLI 参数 --output-dir 指定交付根目录。核验原图哈希及分辨率，
+    再用该帧角点重新求位姿；写入 calibration/visualization 下的图像与统计。
+    不改原图或相机参数；同名可视化文件会覆盖，像素拟合不代表外部精度。
+    """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--output-dir", type=Path, default=Path(__file__).resolve().parents[1] / "outputs"

@@ -15,7 +15,22 @@ from src.pose import project, rms
 
 
 def verify(output: Path, expected_ids: list[str]) -> dict[str, Any]:
-    """Read official CSVs back and recompute their projections against saved observations."""
+    """回读正式 CSV，重算投影并核对冻结标定来源。
+
+    Args:
+        output: 含 calibration、pose 子目录的交付根目录。
+        expected_ids: 位姿 CSV 应包含的完整有序编号列表。
+
+    Returns:
+        通过状态、成功/失败行数以及参数回读、重投影和哈希核对结果。
+
+    Raises:
+        ValueError: 编号、失败原因或冻结模型哈希不匹配。
+        AssertionError: CSV 数值、旋转矩阵或回算残差与保存结果不一致。
+
+    Note:
+        成功时写入 quality/verification.json；不是只读检查，不提供外部精度。
+    """
     model = read_model(output / "calibration/calibration.json")
     check_model(model)
     camera_rows = read_csv(output / "calibration/calibration_results.csv")

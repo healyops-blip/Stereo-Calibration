@@ -29,6 +29,17 @@ from src.validation import bootstrap, cross_validate, geometry, outlier_hints, s
 
 
 def stage_calibration(config: dict[str, Any], root: Path, output: Path) -> None:
+    """检测标定集，比较 C0/C2，并写入选定的正式标定结果。
+
+    Args:
+        config: 棋盘、数据目录、排除编号、分组及重采样配置。
+        root: 相对数据路径的基准目录。
+        output: 交付根目录，写入 calibration 下的 CSV、JSON 和角点图。
+
+    Note:
+        同名正式结果可能覆盖；选型依据留出右图预测而非训练 RMS。
+        不使用 pose 测试数据进行标定。
+    """
     observations, manifest = collect(
         root / config["calibration_dir"],
         config["board"],
@@ -41,7 +52,6 @@ def stage_calibration(config: dict[str, Any], root: Path, output: Path) -> None:
     cv_rows, folds = cross_validate(observations, points, config)
     write_csv(output / "calibration/cross_validation.csv", cv_rows)
     summaries = summarize_cv(cv_rows)
-    # Camera model selection uses calibration-only held-out RIGHT prediction RMS.
     selected = min(summaries, key=lambda key: summaries[key]["right_prediction_rms_px"])
     models = {name: calibrate(observations, points, joint=name == "C2") for name in ("C0", "C2")}
     model = models[selected]
@@ -94,6 +104,17 @@ def stage_calibration(config: dict[str, Any], root: Path, output: Path) -> None:
 
 
 def stage_pose(config: dict[str, Any], root: Path, output: Path) -> None:
+    """用已冻结的相机参数估计测试棋盘位姿并保存完整成功/失败行。
+
+    Args:
+        config: 含 pose_dir、board 和 expected_test_ids 的配置。
+        root: 测试数据相对路径基准。
+        output: 从 calibration 读取模型，向 pose 写入 CSV、观测和坐标轴图。
+
+    Note:
+        不重新标定；位姿是棋盘到原始左相机，旋转 rad、平移 mm。
+        写入标定文件哈希以防不同模型的结果混用。
+    """
     model_path = output / "calibration/calibration.json"
     before = hashlib.sha256(model_path.read_bytes()).hexdigest()
     model = read_model(model_path)
@@ -141,6 +162,11 @@ def stage_pose(config: dict[str, Any], root: Path, output: Path) -> None:
 
 
 def main() -> None:
+    """解析 calibrate、pose、validate 或 all 命令并执行对应交付阶段。
+
+    从配置文件读取输入路径、输出目录和随机种子；业务阶段及报告生成
+    会写入输出目录。运行验证命令也会写入验证报告，不是纯只读操作。
+    """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("stage", choices=("all", "calibrate", "pose", "validate"))
     parser.add_argument(
