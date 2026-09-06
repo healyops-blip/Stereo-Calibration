@@ -170,12 +170,11 @@ def collect(
                     raise ValueError("inconsistent_image_size")
                 size = current_size
 
-                #计算哈希指纹防止重复
+                # 仅记录完全重复图像的来源，不在此处剔除。
                 digest = hashlib.sha256(path.read_bytes()).hexdigest()
                 row[f"{side}_sha256"] = digest
                 row[f"{side}_duplicate_of"] = seen.get(digest, "")
                 seen.setdefault(digest, f"{pair_id}/{side}")
-                #检测角点
                 corners, method = detect(image, shape, detector)
                 obs[side] = corners
                 obs["size"] = size

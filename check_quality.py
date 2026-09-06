@@ -6,6 +6,7 @@ import sys
 import time
 from pathlib import Path
 
+from scripts.check_repository import forbidden
 from src.export import write_json
 
 
@@ -21,22 +22,22 @@ def main() -> None:
     )
     args = parser.parse_args()
     root = Path(__file__).resolve().parent
-    targets = [
-        "src",
-        "scripts",
-        "tests",
-        "run_pipeline.py",
-        "run_experiments.py",
-        "visualize_calibration.py",
-        "validate_pose_accuracy.py",
-        "check_quality.py",
-    ]
+    paths = set(root.glob("*.py"))
+    for folder in ("src", "scripts", "tests"):
+        paths.update((root / folder).rglob("*.py"))
+    targets = sorted(
+        path.relative_to(root).as_posix()
+        for path in paths
+        if not forbidden(path.relative_to(root).as_posix())
+    )
+    source_targets = [path for path in targets if not path.startswith("tests/")]
+    test_targets = [path for path in targets if path.startswith("tests/test_")]
     commands = [
         ["-m", "ruff", "check", *targets],
         ["-m", "ruff", "format", "--check", *targets],
         ["-m", "mypy", *targets],
-        ["-m", "bandit", "-r", "src", "scripts", *targets[3:], "-ll"],
-        ["-m", "pytest", "-q"],
+        ["-m", "bandit", *source_targets, "-ll"],
+        ["-m", "pytest", "-q", *test_targets],
         ["-m", "pip", "check"],
     ]
     if args.with_results:

@@ -3,15 +3,42 @@
 import argparse
 import subprocess
 import sys
+from fnmatch import fnmatchcase
 from pathlib import PurePosixPath
 
-BLOCKED_DIRECTORIES = {"dataset", "kaoti", "outputs", ".venv"}
-BLOCKED_SUFFIXES = (".bmp", ".zip", ".7z", ".tar", ".tar.gz", ".tgz")
+BLOCKED_DIRECTORIES = {"dataset", "kaoti", "outputs", "output", "tmp", ".venv"}
+BLOCKED_SUFFIXES = (".bmp", ".zip", ".7z", ".tar", ".tar.gz", ".tgz", ".rar")
+WEIGHT_DIRECTORIES = {"weights", "checkpoints"}
+WEIGHT_SUFFIXES = (".pt", ".pth", ".ckpt", ".safetensors", ".onnx", ".pt.tmp", ".pth.tmp")
+LOCAL_ONLY = (
+    "run_experiments.py",
+    "src/calibration_experiments.py",
+    "src/experiment_*.py",
+    "scripts/build_manual.py",
+    "scripts/plot_c_comparison.py",
+    "tests/test_experiment_design.py",
+    "tests/test_manual.py",
+    ".vscode/*",
+)
+DELIVERY_FILES = {
+    "delivery/calibration_results.csv",
+    "delivery/pose_results.csv",
+    "delivery/technical_manual.html",
+    "delivery/technical_manual.pdf",
+}
 
 
-def forbidden(path: str) -> bool:
+def forbidden(path: str, *, historical: bool = False) -> bool:
     """忽略大小写，判断 Git 路径是否命中禁用目录或文件后缀。"""
     normalized = path.lower()
+    if WEIGHT_DIRECTORIES.intersection(PurePosixPath(normalized).parts) or normalized.endswith(
+        (*WEIGHT_SUFFIXES, ".tmp")
+    ):
+        return True
+    if not historical and normalized.startswith("delivery/"):
+        return normalized not in DELIVERY_FILES
+    if not historical and any(fnmatchcase(normalized, pattern) for pattern in LOCAL_ONLY):
+        return True
     return bool(BLOCKED_DIRECTORIES.intersection(PurePosixPath(normalized).parts)) or (
         normalized.endswith(BLOCKED_SUFFIXES)
     )
@@ -35,16 +62,21 @@ def main() -> None:
     parser.add_argument("--history", action="store_true")
     args = parser.parse_args()
     paths = set(git("ls-files", "-z").split(b"\0"))
+    blocked = {p.decode(errors="replace") for p in paths if p and forbidden(p.decode())}
     if args.history:
         for revision in git("rev-list", "--all").decode().splitlines():
-            paths.update(git("ls-tree", "-r", "--name-only", "-z", revision).split(b"\0"))
-    blocked = sorted(p.decode(errors="replace") for p in paths if p and forbidden(p.decode()))
+            historical_paths = git("ls-tree", "-r", "--name-only", "-z", revision).split(b"\0")
+            blocked.update(
+                p.decode(errors="replace")
+                for p in historical_paths
+                if p and forbidden(p.decode(), historical=True)
+            )
     if blocked:
         print(
-            "Blocked: datasets, generated outputs, environments or archives are tracked:",
+            "Blocked: local experiments, datasets, outputs or unapproved artifacts are tracked:",
             file=sys.stderr,
         )
-        print("\n".join(blocked), file=sys.stderr)
+        print("\n".join(sorted(blocked)), file=sys.stderr)
         raise SystemExit(1)
     print("Repository data policy passed.")
 

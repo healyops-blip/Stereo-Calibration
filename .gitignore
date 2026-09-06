@@ -17,6 +17,21 @@ outputs/
 /docs/deeplearning_*.md
 /docs/*_results.md
 /docs/traditional_experiments.md
+# Local research and report builders are not part of the delivery.
+/run_experiments.py
+/src/calibration_experiments.py
+/src/experiment_*.py
+/scripts/build_manual.py
+/scripts/plot_C_comparison.py
+/tests/test_experiment_design.py
+/tests/test_manual.py
+/.vscode/
+# Only the four reviewed artifacts may enter delivery/.
+/delivery/*
+!/delivery/calibration_results.csv
+!/delivery/pose_results.csv
+!/delivery/technical_manual.html
+!/delivery/technical_manual.pdf
 # Raw datasets must remain local, including the former directory name.
 /dataset/
 /kaoti/
@@ -26,6 +41,18 @@ outputs/
 *.tar
 *.tar.gz
 *.tgz
+*.rar
+# Model artifacts remain local even outside outputs/.
+weights/
+checkpoints/
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.onnx
+*.pt.tmp
+*.pth.tmp
+*.tmp
 .env
 .env.*
 !.env.example

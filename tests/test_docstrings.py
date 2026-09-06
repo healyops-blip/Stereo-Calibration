@@ -3,6 +3,8 @@
 import ast
 from pathlib import Path
 
+from scripts.check_repository import forbidden
+
 
 def test_source_functions_and_classes_have_docstrings() -> None:
     """Check presence, not semantic correctness, across production Python files."""
@@ -14,6 +16,8 @@ def test_source_functions_and_classes_have_docstrings() -> None:
     )
     missing = []
     for path in paths:
+        if forbidden(path.relative_to(root).as_posix()):
+            continue
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         for node in ast.walk(tree):
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):

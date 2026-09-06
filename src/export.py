@@ -206,8 +206,8 @@ def draw_pose(
         output: 创建并写入坐标轴图的目录，同名图会覆盖。
         square_mm: 格距 mm；坐标轴长度设为其三倍。
 
-    Note:
-        当前实现不检查 imwrite 返回值，保存失败可能未被报告。
+    Raises:
+        OSError: 任一侧图片写入失败；已经写入的另一侧图片不回滚。
     """
     output.mkdir(parents=True, exist_ok=True)
     rotation = cv2.Rodrigues(fit["pose"][:3])[0]
@@ -220,7 +220,9 @@ def draw_pose(
         cv2.drawFrameAxes(
             image, model[f"K_{side}"], model[f"D_{side}"], cv2.Rodrigues(r)[0], t, 3 * square_mm, 2
         )
-        cv2.imwrite(str(output / f"{obs['pair_id']}_{side}.png"), image)
+        path = output / f"{obs['pair_id']}_{side}.png"
+        if not cv2.imwrite(str(path), image):
+            raise OSError(f"Cannot save pose overlay: {path}")
 
 
 def read_csv(path: Path) -> list[dict[str, Any]]:
