@@ -10,6 +10,11 @@ from src.export import write_json
 
 
 def main() -> None:
+    """执行本地静态检查、测试与依赖检查，并保存逐项退出码和日志。
+
+    --with-results 额外调用正式 CSV 回读验证。写入
+    outputs/quality/quality_checks.json；任一检查失败以状态 1 退出。
+    """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--with-results", action="store_true", help="Also verify existing CSV outputs"
@@ -21,6 +26,7 @@ def main() -> None:
         "scripts",
         "tests",
         "run_pipeline.py",
+        "run_experiments.py",
         "visualize_calibration.py",
         "validate_pose_accuracy.py",
         "check_quality.py",

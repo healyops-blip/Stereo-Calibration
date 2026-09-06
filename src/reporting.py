@@ -10,7 +10,14 @@ from src.export import read_csv, read_model
 
 
 def write_result_index(output: Path) -> None:
-    """Keep the output navigation reproducible for new result directories."""
+    """生成交付输出目录的 Markdown 与 HTML 导航。
+
+    Args:
+        output: 已存在的输出根目录，README.md 和 index.html 将被覆盖。
+
+    Note:
+        扫描已有实验 report.md；固定阶段链接可能尚无对应产物。
+    """
     links = [
         ("标定参数 CSV", "calibration/calibration_results.csv"),
         ("标定原图可视化", "calibration/visualization/index.html"),
@@ -20,8 +27,11 @@ def write_result_index(output: Path) -> None:
         ("三阶段质量报告", "quality/quality_report.md"),
         ("代码验收证据", "quality/quality_checks.json"),
     ]
+    for path in sorted((output / "experiments").glob("*/report.md")):
+        links.append((f"标定改进实验：{path.parent.name}", str(path.relative_to(output))))
     description = (
-        "calibration/：标定参数、观测与可视化；pose/：测试姿态、坐标轴与验证；quality/：验收证据。"
+        "calibration/：标定参数、观测与可视化；pose/：测试姿态、坐标轴与验证；"
+        "quality/：验收证据；experiments/：独立改进实验。"
     )
     markdown = ["# 结果导航", "", description, "", "运行对应阶段后，以下文件才会生成。", ""]
     markdown += [f"- [{label}]({path})" for label, path in links]
@@ -38,6 +48,15 @@ def write_result_index(output: Path) -> None:
 
 
 def report(output: Path) -> None:
+    """从保存的标定、位姿及验证数据生成三阶段质量报告。
+
+    Args:
+        output: 含正式标定产物的交付根目录。
+
+    Note:
+        只有位姿来源哈希匹配当前相机模型时才纳入姿态指标。
+        写 quality/quality_report.md 并更新目录导航，不重算标定或训练模型。
+    """
     (output / "quality").mkdir(parents=True, exist_ok=True)
     model = read_model(output / "calibration/calibration.json")
     validation = json.loads(

@@ -14,6 +14,22 @@ def annotate(
     scale: int = 1,
     origin: tuple[int, int] = (0, 0),
 ) -> Any:
+    """用真实残差尺度绘制观测、预测及局部放大标记。
+
+    Args:
+        image: 原图或裁块灰度图 (H, W)，不会原位修改。
+        observed: 原图观测坐标 (N, 2)，px，绿色圆圈。
+        predicted: 同序预测坐标 (N, 2)，px，红色十字。
+        title: 绘制在画布上的标题。
+        scale: 正整数放大倍数；大于一时增加连线和编号。
+        origin: 裁块左上角在原图中的 (x, y) 坐标，px。
+
+    Returns:
+        BGR 叠加画布；坐标先减 origin 再乘 scale。
+
+    Raises:
+        ValueError: 观测与预测点数不一致。
+    """
     canvas = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
     if scale != 1:
         canvas = cv2.resize(canvas, None, fx=scale, fy=scale, interpolation=cv2.INTER_NEAREST)

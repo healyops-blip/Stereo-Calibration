@@ -5,6 +5,18 @@ __pycache__/
 .ruff_cache/
 .DS_Store
 outputs/
+/output/
+/tmp/
+/Stereo Calibration Reference/
+/docs/
+/技术方案.md
+/requirements-docs.txt
+/docs/remote_4090_training.md
+/docs/manual_template.html
+/docs/project_manual.md
+/docs/deeplearning_*.md
+/docs/*_results.md
+/docs/traditional_experiments.md
 # Raw datasets must remain local, including the former directory name.
 /dataset/
 /kaoti/

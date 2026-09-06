@@ -18,6 +18,12 @@ from src.visualization import annotate
 
 
 def main() -> None:
+    """核验五对测试位姿，执行角点留出并导出图文报告。
+
+    CLI 参数 --output-dir 指定交付根目录。先回读验证 CSV 和标定来源，
+    核对原图哈希，随后写入 pose/validation 的指标、叠加图和 HTML。
+    任一测试姿态失败会拒绝继续；无外部真值时绝对旋转和平移误差保持 null。
+    """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--output-dir", type=Path, default=Path(__file__).resolve().parents[1] / "outputs"

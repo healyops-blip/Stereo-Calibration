@@ -10,6 +10,7 @@ BLOCKED_SUFFIXES = (".bmp", ".zip", ".7z", ".tar", ".tar.gz", ".tgz")
 
 
 def forbidden(path: str) -> bool:
+    """忽略大小写，判断 Git 路径是否命中禁用目录或文件后缀。"""
     normalized = path.lower()
     return bool(BLOCKED_DIRECTORIES.intersection(PurePosixPath(normalized).parts)) or (
         normalized.endswith(BLOCKED_SUFFIXES)
@@ -17,10 +18,19 @@ def forbidden(path: str) -> bool:
 
 
 def git(*arguments: str) -> bytes:
+    """运行传入 arguments 的 Git 命令并返回标准输出字节。
+
+    Raises:
+        subprocess.CalledProcessError: Git 返回非零状态。
+    """
     return subprocess.run(["git", *arguments], check=True, capture_output=True).stdout
 
 
 def main() -> None:
+    """检查已跟踪文件；传 --history 时同时检查所有可达历史树。
+
+    不改 Git 索引或提交；发现数据、产物或环境文件时打印路径并以状态 1 退出。
+    """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--history", action="store_true")
     args = parser.parse_args()
